@@ -30,6 +30,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.*;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ProtocolResolver;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -320,6 +321,12 @@ public class MicronautApplicationContext implements ManagedApplicationContext, C
     @Override
     public void setParent(ApplicationContext parent) {
         this.parent = parent;
+        if (parent != null) {
+            Environment parentEnvironment = parent.getEnvironment();
+            if (parentEnvironment instanceof ConfigurableEnvironment) {
+                getEnvironment().merge((ConfigurableEnvironment) parentEnvironment);
+            }
+        }
     }
 
     @Override

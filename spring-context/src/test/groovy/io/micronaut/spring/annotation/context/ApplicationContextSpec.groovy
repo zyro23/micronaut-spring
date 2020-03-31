@@ -20,6 +20,7 @@ import io.micronaut.spring.context.MicronautApplicationContext
 import org.springframework.beans.factory.BeanFactoryUtils
 import org.springframework.context.ApplicationContext
 import org.springframework.context.support.GenericApplicationContext
+import org.springframework.core.env.MapPropertySource
 import org.springframework.stereotype.Service
 import spock.lang.Specification
 
@@ -93,6 +94,27 @@ class ApplicationContextSpec extends Specification {
         context.getBeanProvider(MyNamedService).ifAvailable == context.getBean(MyNamedService)
         BeanFactoryUtils.beanNamesForTypeIncludingAncestors(context, MyNamedService).size() == 1
 
+    }
+
+    void "test set parent context"() {
+        ApplicationContext parent = new GenericApplicationContext()
+        parent.environment.propertySources.addFirst(new MapPropertySource("parentPropertySource", ["parent.property": "parentValue"]))
+
+        when:
+        MicronautApplicationContext context = new MicronautApplicationContext(
+            io.micronaut.context.ApplicationContext.build()
+                .properties("child.property": 'childValue (${parent.property})')
+        )
+        // only a started MicronautApplicationContext has its environment set
+        // (if not using the dependency injection constructor) - does this make sense?
+        context.start()
+        context.setParent(parent)
+        context.environment.getRequiredProperty("parent.property")
+        String childProperty = context.environment.getRequiredProperty("child.property")
+        String childPropertyResolved = context.environment.resolveRequiredPlaceholders(childProperty)
+
+        then:
+        childPropertyResolved == "childValue (parentValue)"
     }
 
     static class MySingleton {}
